@@ -6,6 +6,9 @@
 * Date: Aug 23 2021
 *
 */
+#include <Arduino.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
 
 #define potentiometer_pin A0 // reads the potentiomenter input
 #define battery_voltage_pin A1 // reads the battery level voltage
@@ -40,6 +43,7 @@ void setup() {
 }
 
 void loop() {
+power_management(); // Invoked Function puts software based measures to optimize powwer consumption
 motor_control(); // function controls the motor based on pot input
 }
 
@@ -77,4 +81,28 @@ void check_battery_low(){
       } else {
         digitalWrite(battery_low_pin,HIGH); // Red led stays Off!
       }
+}
+
+void power_management()
+{
+  // turn off brown-out enable in software
+  MCUCR = bit(BODS) | bit(BODSE);
+  MCUCR = bit(BODS);
+
+  interrupts(); // guarantees next instruction executed
+ 
+  // Turns off I2C
+  power_twi_disable(); // TWI (I2C)
+
+  // Turns off unused timers
+  power_timer1_disable(); // Timer 1
+
+    // turn off brown-out enable in software
+  MCUCR = bit(BODS) | bit(BODSE);
+  MCUCR = bit(BODS);
+  sleep_cpu();
+
+  // cancel sleep as a precaution
+  sleep_disable();
+  interrupts(); // guarantees next instruction executed
 }
